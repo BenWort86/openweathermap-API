@@ -1,22 +1,24 @@
+import requests  # HTTP requests
+from datetime import datetime, timezone  # timestamps with timezone
+import pandas as pd  # DataFrames
+import sqlalchemy  # DB connection
+from . import config  # API keys and DB config
+import logging  # logging
+from pathlib import Path  # file paths
 
-import requests
-from datetime import datetime, timezone
-import pandas as pd
-import sqlalchemy
-from . import config
-import logging
-from pathlib import Path
 
-
+# OpenWeatherMap current weather API for Hamburg
 WEATHER_DATA_URL = (
     f'https://api.openweathermap.org/data/2.5/weather?lat=53.551086&'
     f'lon=9.993682&appid={config.Config_Api.WEATHER_API_KEY}&units=metric'
 )
 
+# Base and log directories
 BASE_DIR = Path(__file__).resolve().parent
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
+# Logging setup
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -27,26 +29,22 @@ logging.basicConfig(
 
 
 def get_weather_data():
+    """Fetch current weather data from API and handle response codes."""
     try:
         response = requests.get(WEATHER_DATA_URL)
 
         if 200 <= response.status_code < 300:
             logging.info('Success! Status code: %s', response.status_code)
-            return response
-
         elif 300 <= response.status_code < 400:
             logging.info('Redirection! Status code: %s', response.status_code)
-            return response
-
         elif 400 <= response.status_code < 500:
             logging.warning('Client error! Status code: %s',
                             response.status_code)
-            return response
-
         elif 500 <= response.status_code < 600:
             logging.error('Server error! Status code: %s',
                           response.status_code)
-            return response
+
+        return response
 
     except requests.exceptions.RequestException as e:
         logging.info('Request failed: %s', e)
@@ -54,22 +52,19 @@ def get_weather_data():
 
 
 def data_transform():
-
-    weather_data = []
+    """Convert API JSON to pandas DataFrame."""
     data = get_weather_data()
-
     if data is None:
         print('No Data!')
         return pd.DataFrame()
 
     data_json = data.json()
-
     main = data_json['main']
+    dt = datetime.fromtimestamp(data_json['dt'], timezone.utc)
 
-    date_time = datetime.fromtimestamp(data_json['dt'], timezone.utc)
-
+    # Flatten main weather metrics into a dict
     weather_data = [{
-        'date': date_time,
+        'date': dt,
         'humidity': main.get('humidity'),
         'temperature': main.get('temp'),
         'feels_like': main.get('feels_like'),
@@ -80,29 +75,28 @@ def data_transform():
         'ground_level': main.get('grnd_level'),
     }]
 
-    weather_data_df = pd.DataFrame(weather_data)
-    return weather_data_df
+    return pd.DataFrame(weather_data)
 
 
 def connect_to_db():
-    db_url = config.Config_Database.database_url()
-    return sqlalchemy.create_engine(db_url)
+    """Create SQLAlchemy engine from config."""
+    return sqlalchemy.create_engine(config.Config_Database.database_url())
 
 
 def write_to_db(fetched_at):
-    table_name = 'weather_data_current'
-    weather_data_df = data_transform()
-
-    weather_data_df['fetched_at'] = fetched_at
+    """Add timestamp and append DataFrame to DB table."""
+    df = data_transform()
+    df['fetched_at'] = fetched_at
 
     engine = connect_to_db()
     with engine.begin() as conn:
-        weather_data_df.to_sql(
-            table_name, conn, if_exists='append', index=False)
+        df.to_sql('weather_data_current', conn,
+                  if_exists='append', index=False)
     engine.dispose()
 
 
 def run():
+    """Main entry point."""
     fetched_at = datetime.now(timezone.utc)
     write_to_db(fetched_at)
 
