@@ -19,7 +19,7 @@ version control using Git.
    <img src="pictures/Project_Architecture.png" width= "1000" >
 </p>
 
-## Data Model
+## Table Overview
 
 ### Raw Tables
 - **weather_data_current**  
@@ -37,7 +37,7 @@ version control using Git.
   </p>
 
 ### Analytics Tables
-- **weather_forecast_vs_current**  
+- **weather_forecast_vs_current (temperature and humidity only)**  
   Derived table combining forecast and current weather data, enabling direct comparison
   between predicted and observed values. Includes the forecast horizon in days.
 
@@ -55,5 +55,12 @@ version control using Git.
 - OpenWeatherMap API
 - Git
 
+## Next Steps
 
+- **Code refactoring**: The current Python scripts for fetching current and forecast
+  weather data have similar logic and could be refactored to reduce duplication and
+  improve maintainability.
+
+- **Extended analysis**: Additional analytical metrics (e.g. forecast accuracy by
+  forecast horizon) and visualizations are planned.
 
