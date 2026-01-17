@@ -16,11 +16,11 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     
-    DROP TABLE IF EXISTS weather_data_forecast_vs_current;
+    DROP TABLE IF EXISTS weather_data_forecast_vs_actual;
 
     -- Forecast_tmp
-	DROP TABLE IF EXISTS weather_forecast_tmp;
-    CREATE TEMP TABLE weather_forecast_tmp AS
+	DROP TABLE IF EXISTS weather_data_forecast_tmp;
+    CREATE TEMP TABLE weather_data_forecast_tmp AS
     SELECT
         date AS date_f,
         (fetched_at AT TIME ZONE 'Europe/Berlin')::date AS fetch_date_f,
@@ -37,27 +37,27 @@ BEGIN
 	;
 
     -- Current_tmp
-	DROP TABLE IF EXISTS weather_current_tmp;
-    CREATE TEMP TABLE weather_current_tmp AS
+	DROP TABLE IF EXISTS weather_data_actual_tmp;
+    CREATE TEMP TABLE weather_data_actual_tmp AS
     SELECT
-        date_trunc('hour', fetched_at AT TIME ZONE 'Europe/Berlin') AS date_c,
-        temperature AS temperature_c,
-        humidity AS humidity_c
-    FROM weather_data_current;
+        date_trunc('hour', fetched_at AT TIME ZONE 'Europe/Berlin') AS date_a,
+        temperature AS temperature_a,
+        humidity AS humidity_a
+    FROM weather_data_actual;
 
 	-- Final table (Forecast vs. Current)
-    CREATE TABLE weather_data_forecast_vs_current AS
+    CREATE TABLE weather_data_forecast_vs_actual AS
     SELECT 
-        wdfc.date_f,
-        wdfc.fetched_at_f,
-		analytics.forecast_horizon_days(wdfc.date_f, wdfc.fetched_at_f) AS forecast_horizon_days,
-        wdfc.temperature_f,
-        wdcc.temperature_c,
-        wdfc.humidity_f,
-        wdcc.humidity_c
-    FROM weather_forecast_tmp AS wdfc
-    LEFT JOIN weather_current_tmp AS wdcc
-           ON wdfc.date_f = wdcc.date_c
+        wdft.date_f,
+        wdft.fetched_at_f,
+		analytics.forecast_horizon_days(wdft.date_f, wdft.fetched_at_f) AS forecast_horizon_days,
+        wdft.temperature_f,
+        wdat.temperature_a,
+        wdft.humidity_f,
+        wdat.humidity_a
+    FROM weather_data_forecast_tmp AS wdft
+    LEFT JOIN weather_data_actual_tmp AS wdat
+           ON wdft.date_f = wdat.date_a
     ORDER BY fetched_at_f, date_f;
 
 END;

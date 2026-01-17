@@ -14,4 +14,7 @@ logs/
 # OS
 .DS_Store
 
+# Environment variables
+.env
+src/.env
 
