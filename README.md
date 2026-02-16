@@ -19,7 +19,7 @@ The entire pipeline runs on a Linux server within a local network and is maintai
 control using Git.
 
 <p float="left">
-   <img src="pictures/Project_Architecture.png" width="1000">
+   <img src="images/project_architecture.png" width="1000">
 </p>
 
 ## Tech Stack
