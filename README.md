@@ -31,7 +31,7 @@ control using Git.
 - OpenWeatherMap API
 - Git
 
-## Data Tables Ovverview
+## Data Tables Overview
 
 ### Raw Tables
 - **weather_data_actual**  
